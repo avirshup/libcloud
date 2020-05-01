@@ -1122,9 +1122,10 @@ class S3StorageDriver(AWSDriver, BaseS3StorageDriver):
         return REGION_TO_HOST_MAP.keys()
 
     def get_object_cdn_url(self, obj,
-                           ex_expiry=S3_CDN_URL_EXPIRY_HOURS):
+                           ex_expiry=S3_CDN_URL_EXPIRY_HOURS,
+                           ex_method='GET'):
         """
-        Return a "presigned URL" for read-only access to object
+        Return a "presigned URL" for GETing or PUTing the given object
 
         AWS only - requires AWS signature V4 authenticaiton.
 
@@ -1137,9 +1138,14 @@ class S3StorageDriver(AWSDriver, BaseS3StorageDriver):
                           if set.
         :type  ex_expiry: ``float``
 
+        :param ex_method: Method accepted by the URL. Must be "GET" or "PUT"
+        :type  ex_method: str
+
         :return: Presigned URL for the object.
         :rtype: ``str``
         """
+        if ex_method not in ('GET', 'PUT'):
+            raise ValueError("'ex_mode' argument must be 'GET' or 'PUT'")
 
         # assemble data for the request we want to pre-sign
         # see: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html # noqa
@@ -1165,7 +1171,7 @@ class S3StorageDriver(AWSDriver, BaseS3StorageDriver):
             params=params_to_sign,
             headers=headers_to_sign,
             dt=now,
-            method='GET',
+            method=ex_method,
             path=object_path,
             data=UnsignedPayloadSentinel
         )

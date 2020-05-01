@@ -504,9 +504,10 @@ class AzureBlobsStorageDriver(StorageDriver):
                                       object_name=object_name)
 
     def get_object_cdn_url(self, obj,
-                           ex_expiry=AZURE_STORAGE_CDN_URL_EXPIRY_HOURS):
+                           ex_expiry=AZURE_STORAGE_CDN_URL_EXPIRY_HOURS,
+                           ex_method='GET'):
         """
-        Return a SAS URL that enables reading the given object.
+        Return a SAS URL that enables GETing or PUTing the given object.
 
         :param obj: Object instance.
         :type  obj: :class:`Object`
@@ -515,9 +516,15 @@ class AzureBlobsStorageDriver(StorageDriver):
                           Defaults to 24 hours.
         :type  ex_expiry: ``float``
 
+        :param ex_method: Method accepted by the URL. Must be "GET" or "PUT"
+        :type  ex_method: str
+
         :return: A SAS URL for the object.
         :rtype: ``str``
         """
+        if ex_method not in ('GET', 'PUT'):
+            raise ValueError("'ex_mode' argument must be 'GET' or 'PUT'")
+
         object_path = self._get_object_path(obj.container, obj.name)
 
         now = datetime.utcnow()
@@ -527,7 +534,7 @@ class AzureBlobsStorageDriver(StorageDriver):
         params = {
             'st': start.strftime(AZURE_STORAGE_CDN_URL_DATE_FORMAT),
             'se': expiry.strftime(AZURE_STORAGE_CDN_URL_DATE_FORMAT),
-            'sp': 'r',
+            'sp': 'r' if ex_method == 'GET' else 'w',
             'spr': 'https' if self.secure else 'http,https',
             'sv': self.connectionCls.API_VERSION,
             'sr': 'b',
